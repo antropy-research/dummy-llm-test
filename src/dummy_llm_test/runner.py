@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import concurrent.futures
 import fcntl
 import json
 import math
@@ -8,7 +7,7 @@ import os
 import statistics
 import time
 import uuid
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from dataclasses import asdict
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from .catalog import select
 from .config import secret_values
 from .core import PACKAGE, Case, Response, digest, grading_hash, now, read_json, scrub, wilson, write_json
 from .fingerprint import analyze, load_bank
+from .scheduler import RunControl, RunInterrupted, dispatch
 from .scoring import score
 
 
@@ -38,6 +38,13 @@ def plan_run(config, level, targets, mode):
         "repetitions": repetitions,
         "cases_per_target": len(cases),
         "invocations": len(cases) * len(targets) * repetitions,
+        "concurrency": config["concurrency"],
+        "target_concurrency": {
+            name: min(
+                config["concurrency"], config["targets"][name].get("concurrency", config["concurrency"])
+            )
+            for name in targets
+        },
         "suites": dict(Counter(c.suite for c in cases)),
         "case_ids": [c.id for c in cases],
         "note": "CLI 日常模式内部可能多次调用模型；这里统计评测调用数",
@@ -139,7 +146,9 @@ def latest_records(records):
     return list({r["sample_id"]: r for r in records}.values())
 
 
-def execute_sample(case, name, target, mode, config, identity, sample_id, repeat, signature, log_attempt):
+def execute_sample(
+    case, name, target, mode, config, identity, sample_id, repeat, signature, log_attempt, stop_event=None
+):
     attempts = []
     for attempt in range(config["retries"] + 1):
         log_attempt({"sample_id": sample_id, "attempt": attempt + 1, "event": "started", "time": now()})
@@ -157,7 +166,11 @@ def execute_sample(case, name, target, mode, config, identity, sample_id, repeat
         log_attempt({"sample_id": sample_id, "event": "finished", "time": now(), **attempts[-1]})
         if response.status not in ("rate_limit", "server_error") or attempt == config["retries"]:
             break
-        time.sleep(min(2**attempt, 8))
+        if stop_event is not None:
+            if stop_event.wait(min(2**attempt, 8)):
+                break
+        else:
+            time.sleep(min(2**attempt, 8))
     return {
         "sample_id": sample_id,
         "case_id": case.id,
@@ -272,6 +285,7 @@ def summarize(directory):
         "cost_usd_known_part": sum(r["cost_usd"] for r in records),
         "cost_coverage": sum(r["cost_known"] for r in records),
         "budget": manifest.get("budget"),
+        "scheduler": manifest.get("scheduler"),
         "notes": [
             "没有统一智商分；能力、人工评阅、指纹与运行故障分别呈现。",
             "Wilson 区间仅描述不同题的首轮表现，不把重复题当作独立题；不是模型退化的因果证明。",
@@ -284,7 +298,7 @@ def summarize(directory):
     return result
 
 
-def run(config, level, targets, mode, resume=None, progress=print):
+def run(config, level, targets, mode, resume=None, progress=print, control=None):
     import threading
 
     plan, cases = plan_run(config, level, targets, mode)
@@ -365,13 +379,13 @@ def run(config, level, targets, mode, resume=None, progress=print):
     if result_path.exists() and not result_path.read_text().endswith("\n"):
         result_path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in saved))
     done = {r["sample_id"] for r in saved}
-    tasks = []
+    queues = {name: deque() for name in targets}
     for name in targets:
         for rep in range(plan["repetitions"]):
             for case in cases:
                 sid = digest([name, case.hash, rep])[:24]
                 if sid not in done:
-                    tasks.append((case, name, rep, sid))
+                    queues[name].append((case, name, rep, sid))
     lock = threading.Lock()
 
     def log_attempt(event):
@@ -380,55 +394,78 @@ def run(config, level, targets, mode, resume=None, progress=print):
             f.flush()
 
     limit = config.get("cost_limit_usd")
-    stopped = False
-    # Bounded batches reserve their full worst-case cost, including retries, before dispatch.
+    control = control or RunControl()
+    if limit and any(not r["cost_known"] for r in latest_records(saved)):
+        control.stop("usage_unknown")
+
+    def reserve(task):
+        if not limit:
+            return None
+        case, name, _, _ = task
+        reservation = cost_reservation(case, config["targets"][name], config["retries"])
+        if manifest["budget"]["reserved_usd"] + reservation > limit:
+            return "budget_exhausted"
+        manifest["budget"]["reserved_usd"] += reservation
+        write_json(directory / "manifest.json", manifest)
+        return None
+
+    def execute(task):
+        case, name, rep, sid = task
+        return execute_sample(
+            case,
+            name,
+            config["targets"][name],
+            mode,
+            config,
+            identities[name],
+            sid,
+            rep,
+            signature[name],
+            log_attempt,
+            control.event,
+        )
+
+    def save(record):
+        record = scrub(record, secrets)
+        with (directory / "results.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
+            f.flush()
+        progress(
+            f"{record['target']} · {record['case_id']} · {record['response']['status']} · score={record['grade']['score']}"
+        )
+        return "usage_unknown" if limit and not record["cost_known"] else None
+
+    manifest["scheduler"] = {"state": "running", "started_at": now()}
+    write_json(directory / "manifest.json", manifest)
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=config["concurrency"]) as pool:
-            for offset in range(0, len(tasks), config["concurrency"]):
-                batch = tasks[offset : offset + config["concurrency"]]
-                reservation = (
-                    sum(cost_reservation(c, config["targets"][n], config["retries"]) for c, n, _, _ in batch)
-                    if limit
-                    else 0
-                )
-                if limit and manifest["budget"]["reserved_usd"] + reservation > limit:
-                    stopped = True
-                    progress("达到保守费用预算，剩余样本未发起；已保留续跑结果。")
-                    break
-                manifest["budget"]["reserved_usd"] += reservation
-                write_json(directory / "manifest.json", manifest)
-                futures = [
-                    pool.submit(
-                        execute_sample,
-                        c,
-                        n,
-                        config["targets"][n],
-                        mode,
-                        config,
-                        identities[n],
-                        sid,
-                        rep,
-                        signature[n],
-                        log_attempt,
-                    )
-                    for c, n, rep, sid in batch
-                ]
-                for future in concurrent.futures.as_completed(futures):
-                    record = scrub(future.result(), secrets)
-                    with (directory / "results.jsonl").open("a", encoding="utf-8") as f:
-                        f.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
-                        f.flush()
-                    progress(
-                        f"{record['target']} · {record['case_id']} · {record['response']['status']} · score={record['grade']['score']}"
-                    )
-                if limit and any(not r["cost_known"] for r in latest_records(read_records(directory))):
-                    stopped = True
-                    progress("服务端用量不完整，停止后续计费调用；保留原始响应。")
-                    break
+        with control:
+            dispatch(
+                queues,
+                config["concurrency"],
+                plan["target_concurrency"],
+                execute,
+                reserve,
+                save,
+                control,
+                progress,
+                plan["invocations"],
+                len(done),
+                config["progress_interval"],
+            )
+    except BaseException:
+        manifest["scheduler"]["state"] = "harness_error"
+        raise
+    else:
+        manifest["scheduler"]["state"] = control.reason or "complete"
     finally:
         try:
+            manifest["scheduler"]["finished_at"] = now()
+            write_json(directory / "manifest.json", manifest)
             summary = summarize(directory)
         finally:
             run_lock.close()
     progress(f"报告: {directory / 'report.html'}")
-    return directory, summary, stopped
+    if control.reason == "interrupted":
+        progress(f"中断结果已保存。保持相同配置，用 run --resume {directory} 补齐未发起的题目。")
+        raise RunInterrupted(str(directory))
+    return directory, summary, control.reason is not None

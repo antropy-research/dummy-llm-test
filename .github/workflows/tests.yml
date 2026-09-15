@@ -17,5 +17,4 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install uv==0.11.16
       - run: uv sync --frozen --python ${{ matrix.python }}
-      - run: uv run --frozen ruff check src tests scripts
-      - run: uv run --frozen pytest -q
+      - run: uv run --frozen python scripts/check_repo.py

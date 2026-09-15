@@ -12,6 +12,7 @@ DEFAULT = {
     "default_target": "codex",
     "seed": 42,
     "concurrency": 1,
+    "progress_interval": 10,
     "repetitions": 1,
     "timeout": 300,
     "retries": 0,
@@ -72,7 +73,7 @@ def load_config(path: Path | None = None):
     }
     if set(config) - allowed:
         raise ValueError(f"未知配置项: {sorted(set(config) - allowed)}")
-    for key in ("concurrency", "repetitions", "timeout"):
+    for key in ("concurrency", "repetitions", "timeout", "progress_interval"):
         if not isinstance(config[key], int) or isinstance(config[key], bool) or config[key] < 1:
             raise ValueError(f"{key} 必须是正整数")
     if not isinstance(config["retries"], int) or not 0 <= config["retries"] <= 5:
@@ -117,11 +118,18 @@ def validate_target(name, target):
         "executable",
         "codex_provider",
         "chat_token_field",
+        "concurrency",
     }
     if not isinstance(target, dict) or set(target) - allowed:
         raise ValueError(f"目标 {name} 包含未知配置项")
     if target.get("kind") not in ("chat_completions", "responses", "codex", "claude"):
         raise ValueError(f"目标 {name} 的 kind 不支持")
+    if "concurrency" in target and (
+        not isinstance(target["concurrency"], int)
+        or isinstance(target["concurrency"], bool)
+        or target["concurrency"] < 1
+    ):
+        raise ValueError(f"目标 {name} 的 concurrency 必须是正整数")
     for key in ("api_key_env", "model", "base_url", "executable", "codex_provider"):
         if target.get(key) is not None and not isinstance(target[key], str):
             raise ValueError(f"目标 {name} 的 {key} 必须是字符串")

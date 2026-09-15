@@ -50,9 +50,16 @@ uv run dummy-llm-test run --level quick --target codex --mode native
 
 # 多目标、重复测试。
 uv run dummy-llm-test run --level quick --target codex --target claude --repetitions 3
+
+# 最多 4 个评测调用同时运行，完成一题即补位。
+uv run dummy-llm-test run --level full --concurrency 4
 ```
 
 自动优先读取 `config.local.yaml`；否则读取 `config.yaml`。显式配置选项放在子命令前：`dummy-llm-test --config my.yaml run --level quick`。完整字段、协议差异、预算与自定义题见 [配置说明](docs/configuration.md)。
+
+顶层 `concurrency` 默认 1；每个目标还可配置自己的 `concurrency` 上限，多个目标轮转派发。
+运行期间会显示已完成数、在途题目和耗时。按 Ctrl+C 后停止新派发，等待在途请求返回或超时，
+保存结果及报告后退出；保持相同配置和并发参数即可续跑。原始运行不会因中断而自动重试答错。
 
 ## 人工评阅与历史对比
 
@@ -98,12 +105,13 @@ uv run dummy-llm-test fingerprint analyze \
 - [综合调研与选型](docs/research.md)
 - [配置及扩展](docs/configuration.md)
 - [方法、判分与证据边界](docs/methodology.md)
-- [交付验证记录](docs/validation.md)
+- [0.2.0 验证记录](docs/validation-0.2.md) · [首次交付真实调用记录](docs/validation.md)
 - [第三方来源及许可](THIRD_PARTY_NOTICES.md)
+- [Agent 开发约定与任务模板](docs/agent-development.md)
+- [贡献指南](CONTRIBUTING.md) · [变更记录](CHANGELOG.md)
 
 ```bash
-uv run --frozen pytest -q
-uv run --frozen ruff check src tests scripts
+uv run --frozen python scripts/check_repo.py
 ```
 
 自动测试使用固定数据和模拟响应，不需要 API key，不进行付费调用。源代码采用 MIT；第三方内容保持各自许可和来源说明。

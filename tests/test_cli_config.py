@@ -16,6 +16,9 @@ def test_dry_run_does_not_require_credentials():
     "content",
     [
         "concurrency: 0",
+        "progress_interval: 0",
+        "targets:\n  api:\n    concurrency: false",
+        "targets:\n  codex:\n    concurrency: -1",
         "timeout: -1",
         "unknown_option: true",
         "levels:\n  mylevel:\n    suites: candy",
@@ -37,3 +40,28 @@ def test_missing_cli_message(monkeypatch):
     monkeypatch.setattr(adapters.shutil, "which", lambda x: None)
     with pytest.raises(ValueError, match="找不到"):
         adapters.cli_preflight({"kind": "codex"}, "controlled")
+
+
+def test_cli_concurrency_override_in_dry_run(tmp_path):
+    import json
+
+    p = tmp_path / "config.yaml"
+    p.write_text("concurrency: 2\ntargets:\n  codex:\n    concurrency: 3\n")
+    result = CliRunner().invoke(main, ["--config", str(p), "run", "--dry-run", "--concurrency", "5"])
+    assert result.exit_code == 0
+    plan = json.loads(result.output)
+    assert plan["concurrency"] == 5 and plan["target_concurrency"] == {"codex": 3}
+    result = CliRunner().invoke(main, ["run", "--dry-run", "--concurrency", "0"])
+    assert result.exit_code == 2
+
+
+def test_cli_graceful_interrupt_exit_code(monkeypatch):
+    from dummy_llm_test import cli
+    from dummy_llm_test.scheduler import RunInterrupted
+
+    def run(*_):
+        raise RunInterrupted("saved")
+
+    monkeypatch.setattr(cli, "execute_run", run)
+    result = CliRunner().invoke(main, ["--config", "config.yaml", "run"])
+    assert result.exit_code == 130

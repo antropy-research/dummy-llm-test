@@ -15,6 +15,7 @@ from .report import compare as compare_runs
 from .report import export_review, import_review, regrade
 from .runner import plan_run, preflight
 from .runner import run as execute_run
+from .scheduler import RunInterrupted
 
 
 class SafeGroup(click.Group):
@@ -97,10 +98,11 @@ def doctor(config, target, mode):
 @click.option("--target", multiple=True, help="可多次传入")
 @click.option("--mode", type=click.Choice(["controlled", "native"]), default=None)
 @click.option("--repetitions", type=click.IntRange(1), default=None)
+@click.option("--concurrency", type=click.IntRange(1), default=None, help="覆盖全局并发上限")
 @click.option("--dry-run", is_flag=True, help="只列出计划，不调用模型")
 @click.option("--resume", type=click.Path(path_type=Path, exists=True, file_okay=False))
 @click.pass_obj
-def run_command(config, level, target, mode, repetitions, dry_run, resume):
+def run_command(config, level, target, mode, repetitions, concurrency, dry_run, resume):
     """执行评测，生成 JSONL 明细和 HTML 报告。"""
     old = read_json(resume / "manifest.json")["plan"] if resume else {}
     level = level or old.get("level", "quick")
@@ -108,11 +110,16 @@ def run_command(config, level, target, mode, repetitions, dry_run, resume):
     mode = mode or old.get("mode", config["mode"])
     if repetitions is not None:
         config["levels"][level]["repetitions"] = repetitions
+    if concurrency is not None:
+        config["concurrency"] = concurrency
     plan, _ = plan_run(config, level, targets, mode)
     click.echo(json.dumps(plan, ensure_ascii=False, indent=2))
     if dry_run:
         return
-    _, summary, stopped = execute_run(config, level, targets, mode, resume, click.echo)
+    try:
+        _, summary, stopped = execute_run(config, level, targets, mode, resume, click.echo)
+    except RunInterrupted:
+        raise click.exceptions.Exit(130) from None
     errors = sum(
         count for group in summary["groups"] for status, count in group["statuses"].items() if status != "ok"
     )

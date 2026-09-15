@@ -3,6 +3,7 @@ default_target: codex
 seed: 42
 mode: controlled
 concurrency: 1
+progress_interval: 10 # 正在运行的题目和耗时，最长每 10 秒更新一次。
 repetitions: 1
 timeout: 300
 retries: 0
@@ -11,6 +12,7 @@ output_dir: runs
 targets:
   codex:
     kind: codex
+    # concurrency: 2 # 可选：此目标的并发上限，仍受顶层 concurrency 限制。
     # null 使用本机 Codex 已配置模型；受控模式只继承连接信息。
     model: null
     max_output_tokens: 8192 # Codex 无可验证的此项限制，报告明确记录 null。

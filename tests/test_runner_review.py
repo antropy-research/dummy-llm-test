@@ -160,3 +160,86 @@ def test_regrade_preserves_source_and_makes_no_calls(setup_run, tmp_path):
     assert all("original_grade" in r for r in runner.read_records(output))
     with pytest.raises(ValueError, match="覆盖"):
         regrade(source, output)
+
+
+def test_interrupted_run_saves_responses_and_resumes_only_missing(setup_run):
+    from dummy_llm_test.scheduler import RunControl, RunInterrupted
+
+    config, calls = setup_run
+    config["concurrency"] = 1
+    control = RunControl()
+
+    def progress(message):
+        if "score=" in message:
+            control.stop()
+
+    with pytest.raises(RunInterrupted) as exc:
+        runner.run(config, "quick", ["fixture"], "controlled", progress=progress, control=control)
+    directory = Path(str(exc.value))
+    assert len(calls) == len(runner.read_records(directory)) == 1
+    summary = read_json(directory / "summary.json")
+    assert summary["scheduler"]["state"] == "interrupted"
+    assert "用户中断" in (directory / "report.html").read_text()
+    _, summary, stopped = runner.run(
+        config,
+        "quick",
+        ["fixture"],
+        "controlled",
+        resume=directory,
+        progress=lambda _: None,
+    )
+    assert not stopped and summary["execution_complete"]
+    assert len(calls) == len(set(calls)) == 5
+
+
+def test_budget_reserves_per_request_and_never_overshoots(setup_run):
+    config, calls = setup_run
+    config["targets"]["fixture"].update(input_price_per_million=1, output_price_per_million=1)
+    _, cases = runner.plan_run(config, "quick", ["fixture"], "controlled")
+    first_two = sum(runner.cost_reservation(c, config["targets"]["fixture"], 0) for c in cases[:2])
+    config["cost_limit_usd"] = first_two + 0.00000001
+    directory, summary, stopped = runner.run(
+        config, "quick", ["fixture"], "controlled", progress=lambda _: None
+    )
+    assert stopped and len(calls) == summary["completed"] == 2
+    assert summary["budget"]["reserved_usd"] <= config["cost_limit_usd"]
+    assert read_json(directory / "manifest.json")["scheduler"]["state"] == "budget_exhausted"
+
+
+def test_interrupt_suppresses_transport_retry(setup_run, monkeypatch):
+    from dummy_llm_test.scheduler import RunControl, RunInterrupted
+
+    config, _ = setup_run
+    config.update(concurrency=1, retries=3)
+    control = RunControl()
+    calls = []
+
+    def call(*_):
+        calls.append(1)
+        control.stop()
+        return Response(status="rate_limit")
+
+    monkeypatch.setattr(runner, "call_api", call)
+    with pytest.raises(RunInterrupted) as exc:
+        runner.run(config, "quick", ["fixture"], "controlled", progress=lambda _: None, control=control)
+    records = runner.read_records(Path(str(exc.value)))
+    assert len(calls) == len(records[0]["attempts"]) == 1
+    assert records[0]["response"]["status"] == "rate_limit"
+
+
+def test_resume_does_not_spend_more_after_unknown_usage(setup_run, monkeypatch):
+    config, calls = setup_run
+    config.update(concurrency=1, cost_limit_usd=100)
+    config["targets"]["fixture"].update(input_price_per_million=1, output_price_per_million=1)
+
+    def call(case, *_):
+        calls.append(case.id)
+        return Response(text="21")
+
+    monkeypatch.setattr(runner, "call_api", call)
+    directory, summary, stopped = runner.run(
+        config, "quick", ["fixture"], "controlled", progress=lambda _: None
+    )
+    assert stopped and summary["scheduler"]["state"] == "usage_unknown"
+    runner.run(config, "quick", ["fixture"], "controlled", resume=directory, progress=lambda _: None)
+    assert len(calls) == 1

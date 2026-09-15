@@ -53,6 +53,17 @@ def render_report(directory, manifest, records, summary):
     cases = {c["id"]: c for c in manifest["cases"]}
     body = f'<h1>dummy-llm-test</h1><p class="muted">{esc(manifest["run_id"])} · {esc(manifest["plan"]["level"])} · {esc(manifest["plan"]["mode"])}</p>'
     body += f'<div class="card">已完成 <b>{summary["completed"]}/{summary["planned"]}</b> 个评测调用。客观分数、人工评阅、模型指纹和运行故障分别呈现。</div>'
+    state = (summary.get("scheduler") or {}).get("state")
+    if state and state != "complete":
+        label = {
+            "interrupted": "用户中断",
+            "budget_exhausted": "预算不足",
+            "usage_unknown": "用量缺失",
+            "harness_error": "评测程序异常",
+        }.get(state, state)
+        body += (
+            f'<p class="warning">运行停止原因：{esc(label)}。已返回的回答已保存；未发起的题目不计为答错。</p>'
+        )
     body += "<h2>客观题与运行状态</h2><table><tr><th>目标</th><th>题集</th><th>正确 / 可评分</th><th>首轮 Wilson 95% 区间</th><th>运行状态</th></tr>"
     for g in summary["groups"]:
         ci = g["first_repeat_ci95"]

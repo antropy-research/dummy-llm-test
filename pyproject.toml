@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dummy-llm-test"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reproducible community LLM checks, model fingerprints, and regression reports"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,6 +15,9 @@ dummy-llm-test = "dummy_llm_test.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"THIRD_PARTY_NOTICES.md" = "dummy_llm_test/data/THIRD_PARTY_NOTICES.md"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
