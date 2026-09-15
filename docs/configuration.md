@@ -67,6 +67,12 @@ Chat Completions 将 `max_output_tokens` 映射到 `chat_token_field`，该字�
 
 API 的 input/output/reasoning/cache 用量只采用响应中实际提供的字段，缺失记为 null。`reasoning_tokens` 不重复加到输出计费 token 上。端到端输出 TPS = output_tokens / 整次耗时，包含思考、启动、排队和网络，**不是纯生成速度**。
 
+这里的“整次耗时”指一次 API/CLI 尝试，不是包含重试的完整样本时间。0.3.0 同时
+记录样本总耗时及样本有效 TPS，详见[性能字段和公式](performance.md)。目标可配置
+`stream: true`（默认 false），API 显式使用 SSE，不静默退回非流式；CLI 当前拒绝
+该选项。流式配置影响请求、快照及比较条件。服务端总输出 token 可能包含推理，
+因此不计算以正文首段到末段时间为分母的“纯生成 TPS”。
+
 CLI 的 `executable` 可指定安装路径，`model:null` 使用 CLI 默认模型；建议长期对比时显式锁定模型。CLI 不支持此适配器的 temperature/top_p/seed，配置后会提前报错。`reasoning_effort` 必须被当前 CLI 支持。
 
 Codex 受控模式使用 `--ignore-user-config`，仅从当前 Codex 配置继承模型与连接字段；可用 `codex_provider` 指定其中的连接。它不复制固定 `http_headers` 凭据，应使用现有登录或 provider 的 `env_key`。Codex 没有可验证的每次输出上限，此参数在请求证据中记录为 null，不宣称生效。Claude 使用 `CLAUDE_CODE_MAX_OUTPUT_TOKENS` 设置上限。

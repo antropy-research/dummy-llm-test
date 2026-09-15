@@ -23,6 +23,11 @@ uv run dummy-llm-test run --level fingerprint
 
 运行结束会打印 HTML 报告的绝对路径。也可打开 `runs/latest/report.html`。本地报告无需服务端或联网，原始运行数据默认不提交 Git。
 
+报告直接展示尝试/样本耗时、TPS、重试、分位数、用量覆盖率、分布图及并发吞吐。
+API 目标配置 `stream: true` 可采集正文增量的到达时间；CLI 当前不支持这些流式时间指标。
+旧运行可离线分析：`uv run dummy-llm-test performance analyze runs/OLD --output runs/OLD-performance`。
+字段、公式和比较条件见[性能说明](docs/performance.md)，缺失指标不会显示为零。
+
 | 档位 | 默认每个目标的评测调用数 | 内容 |
 |---|---:|---|
 | `quick` | 5 | 糖果、鹈鹕、知识截止日期、小数比较、字符计数 |
@@ -105,9 +110,10 @@ uv run dummy-llm-test fingerprint analyze \
 - [综合调研与选型](docs/research.md)
 - [配置及扩展](docs/configuration.md)
 - [方法、判分与证据边界](docs/methodology.md)
-- [0.2.0 验证记录](docs/validation-0.2.md) · [首次交付真实调用记录](docs/validation.md)
+- [0.3.0 性能验证](docs/validation-0.3.md) · [0.2.0 验证记录](docs/validation-0.2.md) · [首次交付真实调用记录](docs/validation.md)
 - [第三方来源及许可](THIRD_PARTY_NOTICES.md)
 - [Agent 开发约定与任务模板](docs/agent-development.md)
+- [性能字段、支持矩阵与公式](docs/performance.md)
 - [贡献指南](CONTRIBUTING.md) · [变更记录](CHANGELOG.md)
 
 ```bash

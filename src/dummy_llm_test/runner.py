@@ -4,14 +4,13 @@ import fcntl
 import json
 import math
 import os
-import statistics
 import time
 import uuid
 from collections import Counter, defaultdict, deque
 from dataclasses import asdict
 from pathlib import Path
 
-from . import __version__
+from . import __version__, performance
 from .adapters import api_payload, call_api, call_cli, cli_preflight, codex_connection
 from .catalog import select
 from .config import secret_values
@@ -147,11 +146,37 @@ def latest_records(records):
 
 
 def execute_sample(
-    case, name, target, mode, config, identity, sample_id, repeat, signature, log_attempt, stop_event=None
+    case,
+    name,
+    target,
+    mode,
+    config,
+    identity,
+    sample_id,
+    repeat,
+    signature,
+    log_attempt,
+    stop_event=None,
+    fragment=None,
 ):
     attempts = []
+    retry_waits = []
+    sample_started = time.monotonic()
+    sample_started_at = now()
     for attempt in range(config["retries"] + 1):
-        log_attempt({"sample_id": sample_id, "attempt": attempt + 1, "event": "started", "time": now()})
+        attempt_identity = {
+            "sample_id": sample_id,
+            "target": name,
+            "case_id": case.id,
+            "repeat": repeat,
+            "attempt": attempt + 1,
+            "fragment_id": fragment.path.stem if fragment else None,
+        }
+        log_attempt({**attempt_identity, "event": "started", "time": now()})
+        attempt_started_at = now()
+        attempt_started = time.monotonic()
+        if fragment:
+            fragment.event("attempt_started", attempt_identity, attempt_started, attempt_started_at)
         try:
             response = (
                 call_cli(case, target, mode, config["timeout"], identity)
@@ -160,17 +185,38 @@ def execute_sample(
             )
         except Exception as exc:
             response = Response(status="harness_error", error=f"{type(exc).__name__}: {exc}")
-        attempts.append(
-            {"attempt": attempt + 1, **asdict(response), "cost_usd": measured_cost(response, target)}
-        )
-        log_attempt({"sample_id": sample_id, "event": "finished", "time": now(), **attempts[-1]})
+        attempt_finished = time.monotonic()
+        attempt_finished_at = now()
+        response.elapsed = attempt_finished - attempt_started
+        response.timing = {
+            "started_at": attempt_started_at,
+            "finished_at": attempt_finished_at,
+            "elapsed_seconds": response.elapsed,
+        }
+        if fragment:
+            fragment.event("attempt_finished", attempt_identity, attempt_finished, attempt_finished_at)
+        attempts.append({**attempt_identity, **asdict(response), "cost_usd": measured_cost(response, target)})
+        log_attempt({"event": "finished", "time": now(), **attempts[-1]})
         if response.status not in ("rate_limit", "server_error") or attempt == config["retries"]:
             break
+        wait_started, wait_utc = time.monotonic(), now()
+        interrupted_wait = False
         if stop_event is not None:
-            if stop_event.wait(min(2**attempt, 8)):
-                break
+            interrupted_wait = stop_event.wait(min(2**attempt, 8))
         else:
             time.sleep(min(2**attempt, 8))
+        retry_waits.append(
+            {
+                **attempt_identity,
+                "started_at": wait_utc,
+                "finished_at": now(),
+                "seconds": time.monotonic() - wait_started,
+                "interrupted": interrupted_wait,
+            }
+        )
+        if interrupted_wait:
+            break
+    sample_finished, sample_finished_at = time.monotonic(), now()
     return {
         "sample_id": sample_id,
         "case_id": case.id,
@@ -182,6 +228,13 @@ def execute_sample(
         "mode": mode,
         "repeat": repeat,
         "timestamp": now(),
+        "timing": {
+            **(fragment.dispatched[sample_id] if fragment else {}),
+            "sample_started_at": sample_started_at,
+            "sample_finished_at": sample_finished_at,
+            "sample_seconds": sample_finished - sample_started,
+            "retry_waits": retry_waits,
+        },
         "response": asdict(response),
         "grade": score(case, response),
         "grader_signature": grading_hash(),
@@ -212,13 +265,6 @@ def summarize(directory):
                 "target": target,
                 "suite": suite,
                 "completed": len(rows),
-                "latency_median_seconds": statistics.median(r["response"]["elapsed"] for r in rows),
-                "end_to_end_output_tps": [
-                    r["response"]["usage"]["output_tokens"] / r["response"]["elapsed"]
-                    for r in rows
-                    if r["response"]["elapsed"] > 0
-                    and isinstance(r["response"]["usage"].get("output_tokens"), (int, float))
-                ],
                 "graded": len(graded),
                 "correct": correct,
                 "accuracy": correct / len(graded) if graded else None,
@@ -286,6 +332,7 @@ def summarize(directory):
         "cost_coverage": sum(r["cost_known"] for r in records),
         "budget": manifest.get("budget"),
         "scheduler": manifest.get("scheduler"),
+        "performance": performance.analyze(records, performance.load_fragments(directory)),
         "notes": [
             "没有统一智商分；能力、人工评阅、指纹与运行故障分别呈现。",
             "Wilson 区间仅描述不同题的首轮表现，不把重复题当作独立题；不是模型退化的因果证明。",
@@ -386,6 +433,8 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
                 sid = digest([name, case.hash, rep])[:24]
                 if sid not in done:
                     queues[name].append((case, name, rep, sid))
+    fragment = performance.ExecutionFragment(directory, config, targets)
+    fragment.enqueue(task for tasks in queues.values() for task in tasks)
     lock = threading.Lock()
 
     def log_attempt(event):
@@ -423,6 +472,7 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
             signature[name],
             log_attempt,
             control.event,
+            fragment,
         )
 
     def save(record):
@@ -451,6 +501,7 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
                 plan["invocations"],
                 len(done),
                 config["progress_interval"],
+                on_dispatch=fragment.dispatch,
             )
     except BaseException:
         manifest["scheduler"]["state"] = "harness_error"
@@ -459,6 +510,7 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
         manifest["scheduler"]["state"] = control.reason or "complete"
     finally:
         try:
+            fragment.finish(manifest["scheduler"]["state"])
             manifest["scheduler"]["finished_at"] = now()
             write_json(directory / "manifest.json", manifest)
             summary = summarize(directory)

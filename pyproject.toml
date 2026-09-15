@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dummy-llm-test"
-version = "0.2.0"
+version = "0.3.0"
 description = "Reproducible community LLM checks, model fingerprints, and regression reports"
 readme = "README.md"
 requires-python = ">=3.11"

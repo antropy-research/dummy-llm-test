@@ -62,12 +62,14 @@ class Response:
     text: str = ""
     status: str = "ok"
     usage: dict = field(default_factory=dict)
-    elapsed: float = 0.0
+    elapsed: float | None = None
     raw: Any = None
     error: str | None = None
     tools: list = field(default_factory=list)
     actual_model: str | None = None
     request: dict = field(default_factory=dict)
+    timing: dict = field(default_factory=dict)
+    stream: dict = field(default_factory=dict)
 
 
 def wilson(correct: int, total: int):

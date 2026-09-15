@@ -12,7 +12,8 @@ from pathlib import Path
 
 import httpx
 
-from .core import Response
+from .core import Response, now
+from .streaming import StreamCapture, unavailable_stream
 
 
 def api_payload(case, target):
@@ -27,10 +28,12 @@ def api_payload(case, target):
             "model": target["model"],
             "messages": messages,
             token_field: target.get("max_output_tokens", 8192),
-            "stream": False,
+            "stream": target.get("stream", False),
         }
         if target.get("reasoning_effort") is not None:
             body["reasoning_effort"] = target["reasoning_effort"]
+        if target.get("stream"):
+            body["stream_options"] = {"include_usage": True}
         endpoint = "/chat/completions"
     else:
         body = {
@@ -38,7 +41,7 @@ def api_payload(case, target):
             "input": [{"role": "user", "content": case.prompt}],
             "max_output_tokens": target.get("max_output_tokens", 8192),
             "store": False,
-            "stream": False,
+            "stream": target.get("stream", False),
         }
         if case.system:
             body["instructions"] = case.system
@@ -132,32 +135,72 @@ def call_api(case, target, timeout):
     if key:
         headers["Authorization"] = "Bearer " + key
     start = time.monotonic()
+    started_at = now()
+    capture = None
+    request_started_at = None
     response = Response(request=body)
     try:
-        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
-            reply = client.post(target["base_url"].rstrip("/") + endpoint, json=body, headers=headers)
-        if reply.status_code >= 400 or reply.status_code < 200 or reply.status_code >= 300:
-            response.status = (
-                "rate_limit"
-                if reply.status_code == 429
-                else "server_error"
-                if reply.status_code >= 500
-                else "api_error"
-            )
-            response.error = f"HTTP {reply.status_code}"
-            response.raw = {"http_status": reply.status_code, "body": reply.text[:32000]}
+        if target.get("stream"):
+            with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+                request_started_at = now()
+                capture = StreamCapture(target["kind"], time.monotonic())
+                with client.stream(
+                    "POST", target["base_url"].rstrip("/") + endpoint, json=body, headers=headers
+                ) as reply:
+                    if reply.status_code != 200:
+                        reply.read()
+                        response.status = (
+                            "rate_limit"
+                            if reply.status_code == 429
+                            else "server_error"
+                            if reply.status_code >= 500
+                            else "api_error"
+                        )
+                        response.error = f"HTTP {reply.status_code}"
+                        response.raw = {"http_status": reply.status_code, "body": reply.text[:32000]}
+                    elif "text/event-stream" not in reply.headers.get("content-type", "").lower():
+                        reply.read()
+                        response.raw = {"http_status": reply.status_code, "body": reply.text[:32000]}
+                        response.status, response.error = (
+                            "protocol_error",
+                            "stream:true requires text/event-stream; no fallback",
+                        )
+                    else:
+                        capture.consume(reply.iter_lines())
+                        response = capture.response(parse_api)
         else:
-            try:
-                response = parse_api(reply.json(), target["kind"])
-            except ValueError:
-                response.status = "protocol_error"
-                response.error = "响应不是有效 JSON（未切换协议或重试）"
+            with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+                reply = client.post(target["base_url"].rstrip("/") + endpoint, json=body, headers=headers)
+            if reply.status_code >= 400 or reply.status_code < 200 or reply.status_code >= 300:
+                response.status = (
+                    "rate_limit"
+                    if reply.status_code == 429
+                    else "server_error"
+                    if reply.status_code >= 500
+                    else "api_error"
+                )
+                response.error = f"HTTP {reply.status_code}"
                 response.raw = {"http_status": reply.status_code, "body": reply.text[:32000]}
+            else:
+                try:
+                    response = parse_api(reply.json(), target["kind"])
+                except ValueError:
+                    response.status = "protocol_error"
+                    response.error = "响应不是有效 JSON（未切换协议或重试）"
+                    response.raw = {"http_status": reply.status_code, "body": reply.text[:32000]}
     except httpx.TimeoutException as exc:
         response.status, response.error = "timeout", str(exc)
-    except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+    except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError) as exc:
         response.status, response.error = "protocol_error", str(exc)
+    if capture is not None and capture.events and not response.stream:
+        partial = capture.response(parse_api)
+        partial.status, partial.error = response.status, response.error
+        response = partial
+    if not response.stream:
+        response.stream = unavailable_stream("no_stream_events" if target.get("stream") else "non_streaming")
+    response.stream["request_started_at"] = request_started_at
     response.elapsed = time.monotonic() - start
+    response.timing = {"started_at": started_at, "finished_at": now(), "elapsed_seconds": response.elapsed}
     response.request = body
     return response
 
@@ -388,6 +431,7 @@ def parse_cli(stdout, stderr, code, timed_out, kind, mode, is_fingerprint=False)
 
 def call_cli(case, target, mode, timeout, identity):
     start = time.monotonic()
+    started_at = now()
     with tempfile.TemporaryDirectory(
         prefix="dummy-llm-test-", dir="/private/tmp" if Path("/private/tmp").exists() else None
     ) as temp:
@@ -411,6 +455,12 @@ def call_cli(case, target, mode, timeout, identity):
         except OSError as exc:
             response = Response(status="cli_error", error=str(exc))
         response.elapsed = time.monotonic() - start
+        response.timing = {
+            "started_at": started_at,
+            "finished_at": now(),
+            "elapsed_seconds": response.elapsed,
+        }
+        response.stream = unavailable_stream("cli_incremental_arrival_not_observed")
         response.request = {
             "argv": args,
             "stdin": case.prompt,

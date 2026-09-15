@@ -22,6 +22,7 @@ targets:
     max_output_tokens: 8192
   api:
     kind: chat_completions
+    stream: false # 显式开启 SSE；采集正文增量到达时间，不静默退回非流式。
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY
     model: SET_MODEL
@@ -31,6 +32,7 @@ targets:
     # reasoning_effort: high
   responses:
     kind: responses
+    stream: false
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY
     model: SET_MODEL

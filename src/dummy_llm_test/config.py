@@ -119,11 +119,16 @@ def validate_target(name, target):
         "codex_provider",
         "chat_token_field",
         "concurrency",
+        "stream",
     }
     if not isinstance(target, dict) or set(target) - allowed:
         raise ValueError(f"目标 {name} 包含未知配置项")
     if target.get("kind") not in ("chat_completions", "responses", "codex", "claude"):
         raise ValueError(f"目标 {name} 的 kind 不支持")
+    if "stream" in target and not isinstance(target["stream"], bool):
+        raise ValueError("stream 必须是布尔值")
+    if target.get("stream") and target["kind"] in ("codex", "claude"):
+        raise ValueError("CLI 当前未提供可验证的增量正文到达记录，不支持 stream:true")
     if "concurrency" in target and (
         not isinstance(target["concurrency"], int)
         or isinstance(target["concurrency"], bool)

@@ -47,6 +47,7 @@ def dispatch(
     total,
     completed=0,
     interval=10,
+    on_dispatch=None,
 ):
     """Only submitted tasks consume slots; never enqueue work inside the executor.
 
@@ -120,6 +121,8 @@ def dispatch(
                 if control.event.is_set():
                     break
                 queues[chosen].popleft()
+                if on_dispatch:
+                    on_dispatch(task)
                 pending[pool.submit(execute, task)] = (task, time.monotonic())
                 active[chosen] += 1
                 launched = True

@@ -243,3 +243,31 @@ def test_resume_does_not_spend_more_after_unknown_usage(setup_run, monkeypatch):
     assert stopped and summary["scheduler"]["state"] == "usage_unknown"
     runner.run(config, "quick", ["fixture"], "controlled", resume=directory, progress=lambda _: None)
     assert len(calls) == 1
+
+
+def test_performance_fragment_overlap_and_noop_resume(setup_run, monkeypatch):
+    import threading
+
+    from dummy_llm_test.performance import load_fragments
+
+    config, _ = setup_run
+    config["levels"]["two"] = {"cases": ["basic.decimal", "basic.strawberry"]}
+    barrier = threading.Barrier(2)
+
+    def call(*_):
+        barrier.wait(3)
+        return Response(text="3", usage={"output_tokens": 10, "input_tokens": 5})
+
+    monkeypatch.setattr(runner, "call_api", call)
+    directory, summary, _ = runner.run(config, "two", ["fixture"], "controlled", progress=lambda _: None)
+    metrics = summary["performance"]["fragments"][0]
+    assert metrics["peak_inflight_attempts"] == 2
+    assert metrics["completed_attempts"] == 2 and metrics["known_output_tokens"] == 20
+    assert metrics["output_usage_coverage"] == 1
+    assert all(r["queue_wait_seconds"] is not None for r in summary["performance"]["observations"])
+    first = load_fragments(directory)[0]
+    runner.run(config, "two", ["fixture"], "controlled", resume=directory, progress=lambda _: None)
+    fragments = load_fragments(directory)
+    assert len(fragments) == 2 and first in fragments
+    new_summary = read_json(directory / "summary.json")
+    assert sum(f["duration_seconds"] is None for f in new_summary["performance"]["fragments"]) == 1

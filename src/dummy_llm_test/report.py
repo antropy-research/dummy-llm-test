@@ -50,6 +50,8 @@ def svg_image(grade):
 
 
 def render_report(directory, manifest, records, summary):
+    from .performance_report import render_performance, render_sample
+
     cases = {c["id"]: c for c in manifest["cases"]}
     body = f'<h1>dummy-llm-test</h1><p class="muted">{esc(manifest["run_id"])} · {esc(manifest["plan"]["level"])} · {esc(manifest["plan"]["mode"])}</p>'
     body += f'<div class="card">已完成 <b>{summary["completed"]}/{summary["planned"]}</b> 个评测调用。客观分数、人工评阅、模型指纹和运行故障分别呈现。</div>'
@@ -93,12 +95,14 @@ def render_report(directory, manifest, records, summary):
         for item in fp["results"]:
             body += f"<tr><td>{esc(item['model'])}</td><td>{item['probability']:.2%}</td></tr>"
         body += "</table></div>"
+    if summary.get("performance"):
+        body += render_performance(summary["performance"])
     body += '<h2>逐题证据</h2><input id="filter" placeholder="筛选目标、题号、状态">'
     for r in records:
         case = cases[r["case_id"]]
         label = f"{r['target']} · {r['case_id']} · {r['response']['status']} · 第 {r['repeat'] + 1} 次"
         body += f'<details data-label="{esc(label.lower())}"><summary>{esc(label)} <span class="badge">{grade_label(r["grade"])}</span></summary>'
-        body += f"<p>耗时 {r['response']['elapsed']:.2f}s · 用量 {esc(r['response']['usage'])}</p>"
+        body += render_sample(r)
         if case["kind"] == "svg":
             body += svg_image(r["grade"])
         body += f"<h3>回答</h3><pre>{esc(r['response']['text'])}</pre>"
@@ -232,6 +236,8 @@ def import_review(directory, path):
 
 
 def compare(baseline, current, output):
+    from .performance import compare_performance
+    from .performance_report import render_comparison
     from .runner import latest_records, read_records
 
     old = latest_records(read_records(Path(baseline)))
@@ -312,6 +318,9 @@ def compare(baseline, current, output):
     old_summary = read_json(Path(baseline) / "summary.json")
     new_summary = read_json(Path(current) / "summary.json")
     result = {
+        "performance": compare_performance(
+            read_json(Path(baseline) / "manifest.json"), read_json(Path(current) / "manifest.json"), old, new
+        ),
         "baseline": str(Path(baseline).resolve()),
         "current": str(Path(current).resolve()),
         "pairs": pairs,
@@ -346,6 +355,7 @@ def compare(baseline, current, output):
             + esc({"before": result["fingerprints_before"], "after": result["fingerprints_after"]})
             + "</pre>"
         )
+    body += render_comparison(result["performance"])
     output.with_suffix(".html").write_text(page("历史对比", body), encoding="utf-8")
     return result
 
@@ -378,6 +388,8 @@ def regrade(directory, output):
     cases = {c["id"]: Case(**c) for c in manifest["cases"]}
     output.mkdir(parents=True)
     write_json(output / "manifest.json", manifest)
+    if (directory / "segments").exists():
+        shutil.copytree(directory / "segments", output / "segments")
     for filename in ("fingerprint_bank.json", "challenges.json", "reviews.json"):
         if (directory / filename).exists():
             shutil.copyfile(directory / filename, output / filename)
@@ -406,6 +418,7 @@ def regrade(directory, output):
                 reparsed = parse_api(raw, kind)
             if reparsed:
                 reparsed.elapsed, reparsed.request = response.elapsed, response.request
+                reparsed.timing, reparsed.stream = response.timing, response.stream
                 response = reparsed
             record.setdefault("original_grade", record["grade"])
             record.setdefault("original_response_status", record["response"]["status"])

@@ -30,6 +30,7 @@ Codex 官方约定是从仓库的 `.agents/skills` 发现技能，并读取项�
 | 并发 / 中断 / 预算 | `scheduler.py`、`runner.py` | `test_scheduler.py` + `test_runner_review.py`：同步事件控制的慢请求、并发上限、SIGINT、落盘与续跑 |
 | 配置 / 命令 | `config.py`、`cli.py` | `test_cli_config.py`：配置优先级、非法参数、dry-run 与退出码 |
 | 报告 / 人工评阅 / 比较 | `report.py`、`core.py` | `test_runner_review.py`：评分往返、盲评、来源、不兼容基线不产生误导比较 |
+| 性能 / 流式观测 | `performance.py`、`performance_report.py`、`streaming.py` | `test_performance.py`、`test_streaming.py`：单调时钟、SSE 到达、部分响应、重试等待、片段并发、比较条件 |
 
 路径相对于 `src/dummy_llm_test/`；测试相对于 `tests/`。当某次变更跨多个模块，
 组合相关验证，不把这张表理解成只能运行单个测试文件。

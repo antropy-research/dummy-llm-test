@@ -175,6 +175,21 @@ def fingerprint():
     """ModelTrace 三条挑战导出与已有回答离线分析。"""
 
 
+@main.group("performance")
+def performance_command():
+    """离线性能派生分析；不修改原始记录，不调用模型。"""
+
+
+@performance_command.command("analyze")
+@click.argument("run_dir", type=click.Path(path_type=Path, exists=True))
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+def performance_analyze(run_dir, output):
+    from .performance import derive
+
+    result = derive(run_dir, output)
+    click.echo(f"离线分析 {len(result['observations'])} 个样本；报告: {(output / 'report.html').resolve()}")
+
+
 @fingerprint.command("export")
 @click.option("--output", required=True, type=click.Path(path_type=Path))
 @click.option("--seed", type=int, default=None)
