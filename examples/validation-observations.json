@@ -1,0 +1,486 @@
+{
+  "note": "Live adapter checks, not a model performance or identification-accuracy study. Original private runs remain local; derived runs are explicitly offline regrades.",
+  "observations": [
+    {
+      "run_id": "20260914T104359Z-db19a3be",
+      "level": "quick",
+      "mode": "controlled",
+      "derived": false,
+      "planned": 10,
+      "completed": 10,
+      "samples": [
+        {
+          "target": "codex",
+          "case_id": "candy.original",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 137.06,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "svg.pelican-original",
+          "status": "timeout",
+          "actual_model": null,
+          "grade_status": "timeout",
+          "score": null,
+          "elapsed": 300.02,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "diagnostic.cutoff-zh",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "diagnostic",
+          "score": null,
+          "elapsed": 6.89,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "basic.decimal",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "unparsed",
+          "score": 0,
+          "elapsed": 6.55,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "basic.strawberry",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.76,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "candy.original",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "unparsed",
+          "score": 0,
+          "elapsed": 52.76,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "svg.pelican-original",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "pending_review",
+          "score": null,
+          "elapsed": 7.39,
+          "svg_gate": "no_complete_svg"
+        },
+        {
+          "target": "claude",
+          "case_id": "diagnostic.cutoff-zh",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "diagnostic",
+          "score": null,
+          "elapsed": 8.59,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "basic.decimal",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.95,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "basic.strawberry",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.85,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": []
+    },
+    {
+      "run_id": "20260914T104945Z-9c3848b5",
+      "level": "fingerprint",
+      "mode": "controlled",
+      "derived": false,
+      "planned": 6,
+      "completed": 6,
+      "samples": [
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-1",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 153.3,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-2",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 41.75,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-3",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 38.15,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-1",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 25.63,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-2",
+          "status": "cli_error",
+          "actual_model": "<synthetic>",
+          "grade_status": "cli_error",
+          "score": null,
+          "elapsed": 5.16,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-3",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 20.64,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": [
+        {
+          "target": "codex",
+          "status": "complete",
+          "valid_outputs": 3,
+          "candidate_prediction": "gpt-6-astra",
+          "closed_set_probability": 0.9945460058261415,
+          "candidate_count": 13
+        },
+        {
+          "target": "claude",
+          "status": "incomplete",
+          "valid_outputs": 2,
+          "candidate_prediction": "claude-sonnet-5",
+          "closed_set_probability": 0.7734273637552084,
+          "candidate_count": 13
+        }
+      ]
+    },
+    {
+      "run_id": "20260914T104829Z-5f044fc2",
+      "level": "connectivity",
+      "mode": "controlled",
+      "derived": false,
+      "planned": 2,
+      "completed": 2,
+      "samples": [
+        {
+          "target": "api",
+          "case_id": "basic.decimal",
+          "status": "protocol_error",
+          "actual_model": null,
+          "grade_status": "protocol_error",
+          "score": null,
+          "elapsed": 0.82,
+          "svg_gate": null
+        },
+        {
+          "target": "responses",
+          "case_id": "basic.decimal",
+          "status": "api_error",
+          "actual_model": null,
+          "grade_status": "api_error",
+          "score": null,
+          "elapsed": 0.83,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": []
+    },
+    {
+      "run_id": "20260914T110129Z-79211319",
+      "level": "native-smoke",
+      "mode": "native",
+      "derived": false,
+      "planned": 2,
+      "completed": 2,
+      "samples": [
+        {
+          "target": "claude",
+          "case_id": "basic.decimal",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.34,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "basic.decimal",
+          "status": "timeout",
+          "actual_model": null,
+          "grade_status": "timeout",
+          "score": null,
+          "elapsed": 120.01,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": []
+    },
+    {
+      "run_id": "20260914T111026Z-74355478",
+      "level": "visual-smoke",
+      "mode": "controlled",
+      "derived": false,
+      "planned": 1,
+      "completed": 1,
+      "samples": [
+        {
+          "target": "claude",
+          "case_id": "svg.openenv-pelican_bicycle",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "pending_review",
+          "score": null,
+          "elapsed": 27.61,
+          "svg_gate": "valid_svg"
+        }
+      ],
+      "fingerprints": []
+    },
+    {
+      "run_id": "validation-quick-regraded",
+      "level": "quick",
+      "mode": "controlled",
+      "derived": true,
+      "planned": 10,
+      "completed": 10,
+      "samples": [
+        {
+          "target": "codex",
+          "case_id": "candy.original",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 137.06,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "svg.pelican-original",
+          "status": "timeout",
+          "actual_model": null,
+          "grade_status": "timeout",
+          "score": null,
+          "elapsed": 300.02,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "diagnostic.cutoff-zh",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "diagnostic",
+          "score": null,
+          "elapsed": 6.89,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "basic.decimal",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.55,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "basic.strawberry",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.76,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "candy.original",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 52.76,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "svg.pelican-original",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "pending_review",
+          "score": null,
+          "elapsed": 7.39,
+          "svg_gate": "no_complete_svg"
+        },
+        {
+          "target": "claude",
+          "case_id": "diagnostic.cutoff-zh",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "diagnostic",
+          "score": null,
+          "elapsed": 8.59,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "basic.decimal",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.95,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "basic.strawberry",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "graded",
+          "score": 1,
+          "elapsed": 6.85,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": []
+    },
+    {
+      "run_id": "validation-fingerprint-regraded",
+      "level": "fingerprint",
+      "mode": "controlled",
+      "derived": true,
+      "planned": 6,
+      "completed": 6,
+      "samples": [
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-1",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 153.3,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-2",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 41.75,
+          "svg_gate": null
+        },
+        {
+          "target": "codex",
+          "case_id": "modeltrace.probe-3",
+          "status": "ok",
+          "actual_model": null,
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 38.15,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-1",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 25.63,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-2",
+          "status": "refused",
+          "actual_model": "<synthetic>",
+          "grade_status": "refused",
+          "score": null,
+          "elapsed": 5.16,
+          "svg_gate": null
+        },
+        {
+          "target": "claude",
+          "case_id": "modeltrace.probe-3",
+          "status": "ok",
+          "actual_model": "claude-fable-5",
+          "grade_status": "fingerprint_pending_group",
+          "score": null,
+          "elapsed": 20.64,
+          "svg_gate": null
+        }
+      ],
+      "fingerprints": [
+        {
+          "target": "codex",
+          "status": "complete",
+          "valid_outputs": 3,
+          "candidate_prediction": "gpt-6-astra",
+          "closed_set_probability": 0.9945460058261415,
+          "candidate_count": 13
+        },
+        {
+          "target": "claude",
+          "status": "incomplete",
+          "valid_outputs": 2,
+          "candidate_prediction": "claude-sonnet-5",
+          "closed_set_probability": 0.7734273637552084,
+          "candidate_count": 13
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+# 复制为 config.local.yaml 保存个人配置（不会提交到 Git）。
+default_target: codex
+seed: 42
+mode: controlled
+concurrency: 1
+repetitions: 1
+timeout: 300
+retries: 0
+output_dir: runs
+
+targets:
+  codex:
+    kind: codex
+    # null 使用本机 Codex 已配置模型；受控模式只继承连接信息。
+    model: null
+    max_output_tokens: 8192 # Codex 无可验证的此项限制，报告明确记录 null。
+  claude:
+    kind: claude
+    model: null
+    max_output_tokens: 8192
+  api:
+    kind: chat_completions
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    model: SET_MODEL
+    max_output_tokens: 8192
+    # 旧兼容端点可显式设为 max_tokens；不会自动切换。
+    chat_token_field: max_completion_tokens
+    # reasoning_effort: high
+  responses:
+    kind: responses
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    model: SET_MODEL
+    max_output_tokens: 8192
+
+levels:
+  quick:
+    cases:
+      - candy.original
+      - svg.pelican-original
+      - diagnostic.cutoff-zh
+      - basic.decimal
+      - basic.strawberry
+  full:
+    suites: ['*']
+  fingerprint:
+    suites: [modeltrace]
+  reasoning:
+    suites: [candy, basic, collatz, simplebench, instruction]
+    repetitions: 3
+
+# 可选：disabled_suites、disabled_cases、custom_cases（JSON 题目文件路径列表）。
+# bank: /absolute/path/to/unified_bank.json
+# challenges: /absolute/path/to/challenges.json
+# API 可配置 cost_limit_usd，同时每个目标需提供 input_price_per_million 和
+# output_price_per_million。采用保守预留上限，非服务商账单保证；CLI 不支持。

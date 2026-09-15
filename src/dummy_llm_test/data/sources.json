@@ -1,0 +1,138 @@
+[
+  {
+    "source": "modeltrace",
+    "repo": "xqy2006/ModelTrace",
+    "commit": "60949ef522a84f66b1236b459308b48028d36949",
+    "path": "fingerprint.py",
+    "url": "https://raw.githubusercontent.com/xqy2006/ModelTrace/60949ef522a84f66b1236b459308b48028d36949/fingerprint.py",
+    "sha256": "387fe5c44cc5f859995432267b0d3b462fc26e82419fc22e3ee7f36cc2502d98",
+    "local": "vendor/modeltrace.py"
+  },
+  {
+    "source": "modeltrace",
+    "repo": "xqy2006/ModelTrace",
+    "commit": "60949ef522a84f66b1236b459308b48028d36949",
+    "path": "data/unified_bank.json",
+    "url": "https://raw.githubusercontent.com/xqy2006/ModelTrace/60949ef522a84f66b1236b459308b48028d36949/data/unified_bank.json",
+    "sha256": "6a3f7e4d703990a2322cf535020309380ca858654345d8fe5db278578568bad3",
+    "local": "data/modeltrace_bank.json"
+  },
+  {
+    "source": "simplebench",
+    "repo": "simple-bench/SimpleBench",
+    "commit": "fbc2e429085bdedad7d1a236d2bc9bc18c95f16e",
+    "path": "simple_bench_public.json",
+    "url": "https://raw.githubusercontent.com/simple-bench/SimpleBench/fbc2e429085bdedad7d1a236d2bc9bc18c95f16e/simple_bench_public.json",
+    "sha256": "4ea0bb96b35f61c97dbf5a7dc059986398441f0cbb17fa709ae2b0e9ba4f76e4",
+    "local": "data/simplebench.json"
+  },
+  {
+    "source": "simplebench",
+    "repo": "simple-bench/SimpleBench",
+    "commit": "fbc2e429085bdedad7d1a236d2bc9bc18c95f16e",
+    "path": "system_prompt.txt",
+    "url": "https://raw.githubusercontent.com/simple-bench/SimpleBench/fbc2e429085bdedad7d1a236d2bc9bc18c95f16e/system_prompt.txt",
+    "sha256": "4eae23a320fa43308bf4cb19f7baaf2f60bf889b3c5c592883817ac4922504f0",
+    "local": "data/simplebench_system.txt"
+  },
+  {
+    "source": "bullshitbench",
+    "repo": "petergpt/bullshit-benchmark",
+    "commit": "2678ac296fe6e234d391e0f4ab339f6a777ba2a3",
+    "path": "questions.v2.json",
+    "url": "https://raw.githubusercontent.com/petergpt/bullshit-benchmark/2678ac296fe6e234d391e0f4ab339f6a777ba2a3/questions.v2.json",
+    "sha256": "43f43d14bd20ddf17a29fafad2c3e9862e06c2e9c4a5bc94cf08d6ee2a6b1ece",
+    "local": "data/bullshitbench.json"
+  },
+  {
+    "source": "openenv",
+    "repo": "huggingface/OpenEnv",
+    "commit": "da5929566e99c8eb376a47042b316cb13c0aae29",
+    "path": "envs/pelican_svg_env/server/tasks.py",
+    "url": "https://raw.githubusercontent.com/huggingface/OpenEnv/da5929566e99c8eb376a47042b316cb13c0aae29/envs/pelican_svg_env/server/tasks.py",
+    "sha256": "fe6dd3c7e29e21f10e3d982deef4e9f58b8b36e3cce801430bc1d8a27cff280d",
+    "local": "vendor/openenv_tasks.py"
+  },
+  {
+    "source": "collatz",
+    "repo": "unryuu/idiot",
+    "commit": "01070f7854ff5c3b0722060a4e7e51417ebe2eba",
+    "path": "tests/collatz-16/README.md",
+    "url": "https://raw.githubusercontent.com/unryuu/idiot/01070f7854ff5c3b0722060a4e7e51417ebe2eba/tests/collatz-16/README.md",
+    "sha256": "a884c487544cd81251600112f467bdc97ca5b23adb766b6617590f33112a1e17",
+    "local": "data/collatz/README.md"
+  },
+  {
+    "source": "collatz",
+    "repo": "unryuu/idiot",
+    "commit": "01070f7854ff5c3b0722060a4e7e51417ebe2eba",
+    "path": "tests/collatz-16/test.json",
+    "url": "https://raw.githubusercontent.com/unryuu/idiot/01070f7854ff5c3b0722060a4e7e51417ebe2eba/tests/collatz-16/test.json",
+    "sha256": "0f05825b58a105230c2df5efeda5330de3bb19e977b43c56293bea914d552ee2",
+    "local": "data/collatz/test.json"
+  },
+  {
+    "source": "collatz",
+    "repo": "unryuu/idiot",
+    "commit": "01070f7854ff5c3b0722060a4e7e51417ebe2eba",
+    "path": "tests/collatz-16/徒手版.md",
+    "url": "https://raw.githubusercontent.com/unryuu/idiot/01070f7854ff5c3b0722060a4e7e51417ebe2eba/tests/collatz-16/%E5%BE%92%E6%89%8B%E7%89%88.md",
+    "sha256": "0ea1cf849acf9cffffad828f030ea7585bd7176afd2d3dc433b54f5187696f58",
+    "local": "data/collatz/徒手版.md"
+  },
+  {
+    "source": "candy",
+    "repo": "haowang02/codex-candy-eval",
+    "commit": "4dde0a9e8043c9f84e5e810c4f7cdd555751a20c",
+    "path": "codex_candy_eval.py",
+    "url": "https://raw.githubusercontent.com/haowang02/codex-candy-eval/4dde0a9e8043c9f84e5e810c4f7cdd555751a20c/codex_candy_eval.py",
+    "sha256": "0c11c0bb4629baba8e96fb47fe7c12c387266ff6fd49c00f3c36a15613089dfc",
+    "extracted_local": "data/candy_prompt.txt",
+    "extracted_sha256": "6eca5c454c9f9e4b7ce5c5c22c73a2335dc7f7a972098beed2d03c6bdf81c7dc"
+  },
+  {
+    "source": "modeltrace",
+    "repo": "xqy2006/ModelTrace",
+    "commit": "60949ef522a84f66b1236b459308b48028d36949",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/xqy2006/ModelTrace/60949ef522a84f66b1236b459308b48028d36949/LICENSE",
+    "sha256": "238afb57e498990742f84b9ce6167b4e256ac06104a9938ce953bc41c14bea51",
+    "local": "data/licenses/modeltrace.txt"
+  },
+  {
+    "source": "simplebench",
+    "repo": "simple-bench/SimpleBench",
+    "commit": "fbc2e429085bdedad7d1a236d2bc9bc18c95f16e",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/simple-bench/SimpleBench/fbc2e429085bdedad7d1a236d2bc9bc18c95f16e/LICENSE",
+    "sha256": "6d346288cf5db3f2b4bcd468894f4679d4c798d06e95ed865338b2e6bbfc6aa6",
+    "local": "data/licenses/simplebench.txt"
+  },
+  {
+    "source": "bullshitbench",
+    "repo": "petergpt/bullshit-benchmark",
+    "commit": "2678ac296fe6e234d391e0f4ab339f6a777ba2a3",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/petergpt/bullshit-benchmark/2678ac296fe6e234d391e0f4ab339f6a777ba2a3/LICENSE",
+    "sha256": "ab42a30ce74a22056a0ee66e97284526bfbf0a05630a51889fe507114f455ddf",
+    "local": "data/licenses/bullshitbench.txt"
+  },
+  {
+    "source": "openenv",
+    "repo": "huggingface/OpenEnv",
+    "commit": "da5929566e99c8eb376a47042b316cb13c0aae29",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/huggingface/OpenEnv/da5929566e99c8eb376a47042b316cb13c0aae29/LICENSE",
+    "sha256": "c6f0790f35e2dc8fff3e6d6a39ed9937ed6eebb8738c75fd0805d7c757165145",
+    "local": "data/licenses/openenv.txt"
+  },
+  {
+    "source": "collatz",
+    "repo": "unryuu/idiot",
+    "commit": "01070f7854ff5c3b0722060a4e7e51417ebe2eba",
+    "path": "LICENSE",
+    "url": "https://raw.githubusercontent.com/unryuu/idiot/01070f7854ff5c3b0722060a4e7e51417ebe2eba/LICENSE",
+    "sha256": "a3c1cd4c98dd034fc0eb2469506d0243fbbbca192436911ad7bf28b3a15f5309",
+    "local": "data/licenses/collatz.txt"
+  }
+]
