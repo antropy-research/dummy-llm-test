@@ -14,3 +14,30 @@
 
 项目当前以 macOS / Linux、Python 3.11+ 为开发基线。Windows 原生进程与锁管理
 尚未适配。开发者无需 API key 即可运行自动测试。
+
+
+## English contributor guide
+
+Start with [AGENTS.md](AGENTS.md) and the [module/test map](docs/agent-development.md).
+Install with `uv sync --frozen`; run `uv run python scripts/check_repo.py` before
+submitting. Tests require no model credentials. Use synthetic data and never call
+paid providers without explicit task authorization.
+
+For new questions, supply the original source, fixed revision, redistribution
+terms, prompt, independent answer verification, and scoring boundaries. Preserve
+original-versus-variant distinctions. Open-ended answers use human review. The
+[new case template](.github/ISSUE_TEMPLATE/new_case.yml) captures these details.
+
+For runtime changes, retain every attempt, budget reservations, completed answers,
+and compatible resume behavior. Do not retry incorrect answers to select a better
+score. Update [compatibility rules](docs/compatibility.md) for protocol changes.
+Keep source snapshots and raw runs immutable; regrades are derived evidence.
+
+Describe the concrete problem and resulting behavior in a PR, followed by checks
+actually run and remaining limits. Report offline tests, real requests, human
+reviews, and regrades separately. Do not attach a whole private run; inspect a
+[share export](docs/sharing.md) or provide a minimal synthetic reproduction.
+
+See [SECURITY.md](SECURITY.md) for private vulnerability reports and
+[release preparation](docs/releasing.md) for distribution checks. A source commit,
+a tested artifact, a GitHub Release, and a PyPI publication are separate steps.

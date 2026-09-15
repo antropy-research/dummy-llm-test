@@ -1,0 +1,25 @@
+# Copy to config.local.yaml and replace SET_MODEL. No provider is called by dry-run.
+default_target: chat
+concurrency: 4
+timeout: 300
+retries: 1
+targets:
+  chat:
+    kind: chat_completions
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    model: SET_MODEL
+    max_output_tokens: 8192
+    chat_token_field: max_completion_tokens
+    concurrency: 2
+    stream: false
+  responses:
+    kind: responses
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    model: SET_MODEL
+    max_output_tokens: 8192
+    concurrency: 2
+    stream: true
+# Set your own prices and cost_limit_usd if a conservative reservation cap is needed.
+# Changing the transport or stream setting starts a different experiment condition.

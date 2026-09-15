@@ -228,5 +228,20 @@ def fingerprint_analyze(config, challenge_path, answers, bank, output):
     click.echo(json.dumps(result, ensure_ascii=False, indent=2))
 
 
+@main.group()
+def share():
+    """仅导出允许公开的匿名统计，不复制原始证据。"""
+
+
+@share.command("export")
+@click.argument("run_dir", type=click.Path(path_type=Path, exists=True, file_okay=False))
+@click.option("--output", required=True, type=click.Path(path_type=Path))
+def share_export(run_dir, output):
+    from .sharing import export_run
+
+    result = export_run(run_dir, output)
+    click.echo(f"已导出 {len(result['performance']['observations'])} 个样本的匿名统计：{(output / 'index.html').resolve()}")
+
+
 if __name__ == "__main__":
     main()

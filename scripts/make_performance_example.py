@@ -13,10 +13,11 @@ from dummy_llm_test.report import page
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
-    output = parser.parse_args().output
+    parser.add_argument("--shared", action="store_true", help="generate an anonymous synthetic share demo")
+    args = parser.parse_args()
+    output = args.output
     if output.exists():
         parser.error("output must not exist")
-    output.mkdir(parents=True)
     rows, events = [], []
     for i, (duration, tokens, status) in enumerate(
         [
@@ -85,6 +86,22 @@ def main():
         "retries": 0,
         "timeout": 15,
     }
+    if args.shared:
+        from dummy_llm_test.sharing import export_data, write_export
+
+        for i, row in enumerate(rows):
+            row["kind"] = "exact"
+            row["grade"] = (
+                {"status": "graded", "score": i % 2}
+                if row["response"]["status"] == "ok"
+                else {"status": row["response"]["status"], "score": None}
+            )
+        data = export_data(rows, [fragment])
+        data["synthetic"] = True
+        write_export(data, output)
+        print((output / "index.html").resolve())
+        return
+    output.mkdir(parents=True)
     data = analyze(rows, [fragment])
     body = '<h1>性能报告示例</h1><p class="warning">完全离线合成数据，用于检查界面；不是真实模型成绩。</p>'
     body += render_performance(data)

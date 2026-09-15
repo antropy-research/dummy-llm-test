@@ -23,7 +23,7 @@ def now() -> str:
 
 
 def grading_hash():
-    return digest({name: (PACKAGE / name).read_text() for name in ("scoring.py", "adapters.py")})
+    return digest({name: (PACKAGE / name).read_text() for name in ("scoring.py", "core.py")})
 
 
 def read_json(path: Path):

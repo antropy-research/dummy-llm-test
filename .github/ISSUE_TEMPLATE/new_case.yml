@@ -1,0 +1,29 @@
+name: Evaluation case / 题目提案
+description: Propose a source-faithful reproduction or clearly identified local variant.
+body:
+  - type: input
+    id: source
+    attributes:
+      label: Upstream URL, pinned commit, license and redistribution status
+    validations:
+      required: true
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Original prompt and proposed variant (identify each separately)
+      description: Do not include private model responses or instructions for repository agents.
+    validations:
+      required: true
+  - type: textarea
+    id: scoring
+    attributes:
+      label: Scoring, independent answer verification, or human rubric
+      description: Model explanations are not an independent oracle. Open-ended cases use human review.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Benefit, limitations, level/call-count impact and compatibility
+    validations:
+      required: true

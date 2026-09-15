@@ -1,5 +1,7 @@
 # dummy-llm-test
 
+中文 · [English](README.en.md)
+
 社区验智、模型指纹与能力回归工具。统一运行 API、Codex CLI 和 Claude Code，保存可复查的回答与报告。**开放题全部人工评阅，无模型裁判费用。**
 
 ## 从 0 到 1
@@ -36,6 +38,21 @@ API 目标配置 `stream: true` 可采集正文增量的到达时间；CLI 当�
 | `reasoning` | 135 | 45 道客观题，各重复 3 次；见配置文件 |
 
 完整题库含糖果 10、SVG 31、知识日期 2、基础易错 12、Collatz 1、SimpleBench 公开集 10、BullshitBench V2 100、指令遵循 12、上下文检索 8、ModelTrace 3。131 道开放题需要人工评阅；`full` 完成调用不等于人工评分已完成。
+
+## 分享与开源协作
+
+```bash
+uv run dummy-llm-test share export runs/YOUR_RUN --output shared-report
+```
+
+打开输出的 `index.html` 即可分享匿名统计；回答、私有地址、本机路径和模型身份不导出。
+[无需密钥的合成示例](examples/shared-report/index.html)可在克隆后本地打开，
+[分享说明](docs/sharing.md)列出保留字段与隐私边界。
+
+0.4.0 起新运行拆分实验与运行签名，报告样式变更不影响可比性；续跑可调整并发，
+性能条件按样本保留。详见[兼容规则](docs/compatibility.md)和[接入证据矩阵](docs/compatibility-matrix.md)。
+[贡献指南](CONTRIBUTING.md)、[安全报告](SECURITY.md)和[版本交付流程](docs/releasing.md)
+供持续维护使用；agent 开发约定见 [AGENTS.md](AGENTS.md)。
 
 ## 配置 API 或其他 CLI
 
@@ -110,7 +127,7 @@ uv run dummy-llm-test fingerprint analyze \
 - [综合调研与选型](docs/research.md)
 - [配置及扩展](docs/configuration.md)
 - [方法、判分与证据边界](docs/methodology.md)
-- [0.3.0 性能验证](docs/validation-0.3.md) · [0.2.0 验证记录](docs/validation-0.2.md) · [首次交付真实调用记录](docs/validation.md)
+- [0.4.0 P1 验证](docs/validation-0.4.md) · [0.3.0 性能验证](docs/validation-0.3.md) · [0.2.0 验证记录](docs/validation-0.2.md) · [首次交付真实调用记录](docs/validation.md)
 - [第三方来源及许可](THIRD_PARTY_NOTICES.md)
 - [Agent 开发约定与任务模板](docs/agent-development.md)
 - [性能字段、支持矩阵与公式](docs/performance.md)

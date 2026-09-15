@@ -1,0 +1,32 @@
+name: Bug report / 问题报告
+description: Report harness behavior using a minimal, sanitized reproduction.
+body:
+  - type: markdown
+    attributes:
+      value: Do not upload raw runs, private endpoints, or credentials. Security vulnerabilities belong in the private channel described in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Harness commit/version, Python, OS
+    validations:
+      required: true
+  - type: input
+    id: transport
+    attributes:
+      label: Protocol or CLI version, controlled/native, stream, concurrency
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal command/config and synthetic response
+      description: Use environment variable names and example.invalid instead of secrets or private addresses.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected and observed behavior
+      description: Separate transport failure, answer correctness, and report behavior. Optionally attach a share export after inspection.
+    validations:
+      required: true

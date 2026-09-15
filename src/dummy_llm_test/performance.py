@@ -306,6 +306,14 @@ def load_fragments(directory):
 
 
 def conditions(manifest, record):
+    if "performance_conditions" in record:
+        return {
+            **record["performance_conditions"],
+            "case_hash": record["case_hash"],
+            "mode": record["mode"],
+            "actual_model": record["response"].get("actual_model"),
+            "output_limit": record["response"].get("request", {}).get("output_limit"),
+        }
     config = manifest["config"]
     target = config["targets"][record["target"]]
     return {
@@ -347,7 +355,9 @@ def compare_performance(old_manifest, new_manifest, old, new):
         before = observation(prior) if prior else None
         a = conditions(old_manifest, prior) if prior else {}
         b = conditions(new_manifest, record)
-        different = [k for k in b if a.get(k) != b[k]] if prior else ["no_baseline"]
+        different = (
+            sorted(k for k in a.keys() | b.keys() if a.get(k) != b.get(k)) if prior else ["no_baseline"]
+        )
         compatible = prior is not None and not different
         success_pair = compatible and before["success"] and after["success"]
         row = {

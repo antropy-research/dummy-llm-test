@@ -10,7 +10,7 @@ from collections import Counter, defaultdict, deque
 from dataclasses import asdict
 from pathlib import Path
 
-from . import __version__, performance
+from . import __version__, contracts, performance
 from .adapters import api_payload, call_api, call_cli, cli_preflight, codex_connection
 from .catalog import select
 from .config import secret_values
@@ -353,31 +353,28 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
     identities = preflight(config, targets, mode)
     secrets = secret_values(config)
     code_hash = digest({str(p.relative_to(PACKAGE)): p.read_text() for p in sorted(PACKAGE.rglob("*.py"))})
+    components = contracts.versions()
     signature = {
-        name: digest(
-            {
-                "target": config["targets"][name],
-                "identity": identities[name],
-                "mode": mode,
-                "harness_version": __version__,
-                "harness_code_hash": code_hash,
-            }
-        )
+        name: contracts.target_signature(config["targets"][name], identities[name], mode, components)
         for name in targets
     }
-    resume_hash = digest(
-        {
-            "config": config,
-            "plan": plan,
-            "cases": [c.hash for c in cases],
-            "identity": identities,
-            "code_hash": code_hash,
-        }
-    )
+    bank = load_bank(config.get("bank")) if any(c.kind == "fingerprint" for c in cases) else None
+    resume_hash = contracts.resume_signature(config, plan, cases, identities, components, bank)
     if resume:
         directory = Path(resume).resolve()
         manifest = read_json(directory / "manifest.json")
-        if manifest["resume_hash"] != resume_hash:
+        if manifest.get("contract_versions", {}).get("schema") != contracts.SCHEMA:
+            # Legacy evidence keeps its original conservative whole-source check.
+            resume_hash = digest(
+                {
+                    "config": config,
+                    "plan": plan,
+                    "cases": [c.hash for c in cases],
+                    "identity": identities,
+                    "code_hash": code_hash,
+                }
+            )
+        if manifest.get("derived_from") or manifest["resume_hash"] != resume_hash:
             raise ValueError("续跑配置/题目/CLI 版本已变化；请使用原配置或开始新运行")
     else:
         run_id = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]
@@ -389,6 +386,7 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
             "created_at": now(),
             "version": __version__,
             "code_hash": code_hash,
+            "contract_versions": components,
             "resume_hash": resume_hash,
             "plan": plan,
             "config": scrub(config, secrets),
@@ -434,6 +432,13 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
                 if sid not in done:
                     queues[name].append((case, name, rep, sid))
     fragment = performance.ExecutionFragment(directory, config, targets)
+    fragment.data["contract_versions"] = components
+    fragment.data["runtime_config"] = {
+        "progress_interval": config["progress_interval"],
+        "timeout": config["timeout"],
+        "retries": config["retries"],
+        "cost_limit_usd": config.get("cost_limit_usd"),
+    }
     fragment.enqueue(task for tasks in queues.values() for task in tasks)
     lock = threading.Lock()
 
@@ -460,7 +465,7 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
 
     def execute(task):
         case, name, rep, sid = task
-        return execute_sample(
+        record = execute_sample(
             case,
             name,
             config["targets"][name],
@@ -474,6 +479,11 @@ def run(config, level, targets, mode, resume=None, progress=print, control=None)
             control.event,
             fragment,
         )
+        record["performance_conditions"] = contracts.performance_conditions(
+            config, targets, name, identities[name], components
+        )
+        record["contract_versions"] = components
+        return record
 
     def save(record):
         record = scrub(record, secrets)

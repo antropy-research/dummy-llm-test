@@ -1,0 +1,19 @@
+default_target: codex
+mode: controlled
+concurrency: 3
+progress_interval: 10
+timeout: 300
+retries: 0
+targets:
+  codex:
+    kind: codex
+    model: null
+    concurrency: 2
+    stream: false
+  claude:
+    kind: claude
+    model: null
+    concurrency: 1
+    stream: false
+# CLI stream:true is rejected; a final answer event is not first-visible-text timing.
+# --mode native retains local tools/configuration and must be compared separately.

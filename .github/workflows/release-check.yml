@@ -1,0 +1,38 @@
+name: Release artifact checks
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version in pyproject.toml (without v)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install uv==0.11.16
+      - run: uv sync --frozen
+      - run: uv run --frozen python scripts/check_repo.py
+      - run: uv build
+      - run: uv run --frozen python scripts/check_dist.py --dist dist --version "$RELEASE_VERSION"
+      - name: Install wheel and check catalog outside checkout
+        run: |
+          uv venv "$RUNNER_TEMP/package-check"
+          uv pip install --python "$RUNNER_TEMP/package-check/bin/python" dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/package-check/bin/dummy-llm-test" list --level quick --json > quick.json
+          "$RUNNER_TEMP/package-check/bin/python" -c 'import json; assert len(json.load(open("quick.json"))) == 5'
+          "$RUNNER_TEMP/package-check/bin/dummy-llm-test" run --level full --dry-run
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/*
+          retention-days: 14

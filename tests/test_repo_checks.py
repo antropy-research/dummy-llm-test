@@ -1,6 +1,7 @@
 import hashlib
 import json
 import runpy
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -52,3 +53,15 @@ def test_contract_check_rejects_invalid_skill_metadata(repository):
     assert len(validate_repo(repository)) == 1
     skill.write_text("---\nname: example\ndescription: Example workflow.\n---\nContent")
     assert validate_repo(repository) == []
+
+
+@pytest.mark.parametrize("name", ["runs/private.json", "pkg/.env", "pkg/config.local.yaml", "../escape"])
+def test_distribution_check_rejects_private_or_unsafe_members(tmp_path, name):
+    inspect_archive = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/check_dist.py"))[
+        "inspect_archive"
+    ]
+    wheel = tmp_path / "unsafe.whl"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr(name, "synthetic private content")
+    with pytest.raises(ValueError, match="private/cache/unsafe"):
+        inspect_archive(wheel, "0.4.0")
